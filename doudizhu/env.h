@@ -5,7 +5,7 @@
 #include <random>
 using namespace std;
 
-//#define DEBUG
+#define DEBUG
 
 class Env {
 public:
@@ -22,12 +22,12 @@ public:
 
 	Env() : _last_group({}, Category::EMPTY, 0) {
 		this->_generator = mt19937(random_device{}());
-		for (int i = 0; i < 1; i++) {
-			this->_players.push_back(new MinimaxPlayer(this));
+		for (int i = 0; i < 3; i++) {
+			this->_players.push_back(new RandomPlayer(this));
 		}
-		for (int i = 0; i < 1; i++) {
+		/*for (int i = 0; i < 1; i++) {
 			this->_players.push_back(new MinimaxPlayer(this));
-		}
+		}*/
 	}
 
 	~Env() {

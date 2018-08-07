@@ -18,6 +18,42 @@ vector<Card> Env::_init_cards = {
 	Card::SIX,
 	Card::SIX,
 	Card::SIX,
+	Card::SEVEN,
+	Card::SEVEN,
+	Card::SEVEN,
+	Card::SEVEN,
+	Card::EIGHT,
+	Card::EIGHT,
+	Card::EIGHT,
+	Card::EIGHT,
+	Card::NINE,
+	Card::NINE,
+	Card::NINE,
+	Card::NINE,
+	Card::TEN,
+	Card::TEN,
+	Card::TEN,
+	Card::TEN,
+	Card::JACK,
+	Card::JACK,
+	Card::JACK,
+	Card::JACK,
+	Card::QUEEN,
+	Card::QUEEN,
+	Card::QUEEN,
+	Card::QUEEN,
+	Card::KING,
+	Card::KING,
+	Card::KING,
+	Card::KING,
+	Card::ACE,
+	Card::ACE,
+	Card::ACE,
+	Card::ACE,
+	Card::TWO,
+	Card::TWO,
+	Card::TWO,
+	Card::TWO,
 	Card::BLACK_JOKER,
 	Card::RED_JOKER
 };
@@ -30,15 +66,22 @@ void Env::reset() {
 	}
 	shuffle(_cards.begin(), _cards.end(), _generator);
 
-	for (int i = 0; i < 11; i++)
+	for (int i = 0; i < 20; i++)
 	{
 		_players[0]->add_card(_cards[i]);
 	}
-	for (int i = 11; i < 18; i++) {
+	for (int i = 20; i < 37; i++) {
 		_players[1]->add_card(_cards[i]);
 	}
+	for (int i = 37; i < 54; i++) {
+		_players[2]->add_card(_cards[i]);
+	}
+	for (int i = 0; i < 3; i++)
+	{
+		_players[i]->calc_avail_actions();
+	}
 #ifdef DEBUG
-	cout << *_players[0] << endl << *_players[1] << endl;
+	cout << *_players[0] << endl << *_players[1] << endl << *_players[2] << endl;
 #endif
 	_current_idx = 0;
 	_current_controller = 0;
@@ -47,7 +90,7 @@ void Env::reset() {
 
 bool Env::step(int &winner) {
 	CardGroup respondence = _players[_current_idx]->respond(_last_group);
-	auto next_idx = (_current_idx + 1) % 2;
+	auto next_idx = (_current_idx + 1) % 3;
 
 	if (respondence._category != Category::EMPTY)
 	{

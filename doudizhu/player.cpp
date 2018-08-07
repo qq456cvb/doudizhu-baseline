@@ -47,26 +47,6 @@ void Player::add_card(Card card) {
 		return static_cast<int>(c1) < static_cast<int>(c2);
 	});
 	this->_cnts[static_cast<int>(card)]++;
-	if (this->_cnts[static_cast<int>(card)] == 1)
-	{
-		this->_avail_actions.push_back(CardGroup({ card }, Category::SINGLE, static_cast<int>(card)));
-		if ((card == Card::BLACK_JOKER || card == Card::RED_JOKER) && _cnts[13] + _cnts[14] == 2)
-		{
-			this->_avail_actions.push_back(CardGroup({ Card(13), Card(14) }, Category::BIGBANG, 100));
-		}
-	}
-	else if (this->_cnts[static_cast<int>(card)] == 2)
-	{
-		this->_avail_actions.push_back(CardGroup({ card, card }, Category::DOUBLE, static_cast<int>(card)));
-	}
-	else if (this->_cnts[static_cast<int>(card)] == 3)
-	{
-		this->_avail_actions.push_back(CardGroup({ card, card, card }, Category::TRIPLE, static_cast<int>(card)));
-	}
-	else if (this->_cnts[static_cast<int>(card)] == 4)
-	{
-		this->_avail_actions.push_back(CardGroup({ card, card, card, card }, Category::QUADRIC, static_cast<int>(card)));
-	}
 }
 
 void Player::remove_card(Card card) {
@@ -84,27 +64,73 @@ void Player::remove_card(Card card) {
 	int a = this->_handcards.size();
 	this->_handcards.erase(it);
 	assert(a - this->_handcards.size() == 1);
-	if (this->_cnts[static_cast<int>(card)] == 1)
+
+	this->_cnts[static_cast<int>(card)]--;
+	vector<CardGroup>::iterator it2 = _avail_actions.begin();
+	while (it2 != _avail_actions.end())
 	{
-		this->_avail_actions.erase(remove(this->_avail_actions.begin(), this->_avail_actions.end(), CardGroup({ card }, Category::SINGLE, static_cast<int>(card))), this->_avail_actions.end());
-		if ((card == Card::BLACK_JOKER || card == Card::RED_JOKER) && _cnts[13] + _cnts[14] == 2)
+		// TODO: test if there is enough memory to put cnt into CardGroup directly
+		int cnt[15] = { 0 };
+		for (const auto &c : it2->_cards) {
+			cnt[static_cast<int>(c)]++;
+		}
+		if (_cnts[static_cast<int>(card)] < cnt[static_cast<int>(card)])
 		{
-			this->_avail_actions.erase(remove(this->_avail_actions.begin(), this->_avail_actions.end(), CardGroup({ Card(13), Card(14) }, Category::BIGBANG, 100)), this->_avail_actions.end());
+			it2 = _avail_actions.erase(it2);
+		} else {
+			it2++;
 		}
 	}
-	else if (this->_cnts[static_cast<int>(card)] == 2)
-	{
-		this->_avail_actions.erase(remove(this->_avail_actions.begin(), this->_avail_actions.end(), CardGroup({ card, card }, Category::DOUBLE, static_cast<int>(card))), this->_avail_actions.end());
+}
+
+void Player::remove_cards(vector<Card> cards) {
+	vector<Card>::iterator it;
+	int a = this->_handcards.size();
+	for (auto &card : cards) {
+		for (it = _handcards.begin(); it < _handcards.end(); it++)
+		{
+			if (card == *it)
+			{
+				this->_cnts[static_cast<int>(card)]--;
+				_handcards.erase(it);
+				break;
+			}
+		}
 	}
-	else if (this->_cnts[static_cast<int>(card)] == 3)
+	//auto pr = std::equal_range(this->_handcards.begin(), this->_handcards.end(), card);
+	assert(a - this->_handcards.size() == cards.size());
+	
+	vector<CardGroup>::iterator it2 = _avail_actions.begin();
+	while (it2 != _avail_actions.end())
 	{
-		this->_avail_actions.erase(remove(this->_avail_actions.begin(), this->_avail_actions.end(), CardGroup({ card, card, card }, Category::TRIPLE, static_cast<int>(card))), this->_avail_actions.end());
+		// TODO: test if there is enough memory to put cnt into CardGroup directly
+		int cnt[15] = { 0 };
+		for (const auto &c : it2->_cards) {
+			cnt[static_cast<int>(c)]++;
+		}
+		bool found = false;
+		for (auto &card : cards) {
+			if (_cnts[static_cast<int>(card)] < cnt[static_cast<int>(card)])
+			{
+				it2 = _avail_actions.erase(it2);
+				found = true;
+				break;
+			}
+		}
+		if (!found)
+		{
+			it2++;
+		}
 	}
-	else if (this->_cnts[static_cast<int>(card)] == 4)
-	{
-		this->_avail_actions.erase(remove(this->_avail_actions.begin(), this->_avail_actions.end(), CardGroup({ card, card, card, card }, Category::QUADRIC, static_cast<int>(card))), this->_avail_actions.end());
+}
+
+void Player::calc_avail_actions() {
+	for (const auto &action : all_actions) {
+		if (includes(_handcards.begin(), _handcards.end(), action._cards.begin(), action._cards.end()))
+		{
+			_avail_actions.push_back(action);
+		}
 	}
-	this->_cnts[static_cast<int>(card)]--;
 }
 
 bool Player::over() {
@@ -112,42 +138,9 @@ bool Player::over() {
 }
 
 vector<CardGroup> Player::candidate(const CardGroup &last_card) {
-	/*vector<CardGroup> results;
-	results.reserve(16);*/
 	if (last_card._category == Category::EMPTY)
 	{
 		return _avail_actions;
-		/*for (int i = 0; i < 4; i++) {
-			if (_cnts[i] >= 1)
-			{
-				results.push_back(CardGroup({ Card(i) }, Category::SINGLE, i));
-			}
-			if (_cnts[i] >= 2)
-			{
-				results.push_back(CardGroup({ Card(i), Card(i) }, Category::DOUBLE, i));
-			}
-			if (_cnts[i] >= 3)
-			{
-				results.push_back(CardGroup({ Card(i), Card(i), Card(i) }, Category::TRIPLE, i));
-			}
-			if (_cnts[i] >= 4)
-			{
-				results.push_back(CardGroup({ Card(i), Card(i), Card(i) }, Category::QUADRIC, i));
-			}
-		}
-		if (_cnts[13] >= 1)
-		{
-			results.push_back(CardGroup({ Card(13) }, Category::SINGLE, 13));
-			if (_cnts[14] >= 1)
-			{
-				results.push_back(CardGroup({ Card(14) }, Category::SINGLE, 14));
-				results.push_back(CardGroup({ Card(13), Card(14) }, Category::BIGBANG, 100));
-			}
-		}
-		else if (_cnts[14] >= 1)
-		{
-			results.push_back(CardGroup({ Card(14) }, Category::SINGLE, 14));
-		}*/
 	}
 	else {
 		vector<CardGroup> results;
@@ -159,45 +152,8 @@ vector<CardGroup> Player::candidate(const CardGroup &last_card) {
 				results.push_back(cg);
 			}
 		}
-		/*if (last_card._category == Category::SINGLE)
-		{
-			for (int i = last_card._rank + 1; i < 15; i++)
-			{
-				if (_cnts[i] >= 1) results.push_back(CardGroup({ Card(i) }, Category::SINGLE, i));
-			}
-		}
-		else if (last_card._category == Category::DOUBLE)
-		{
-			for (int i = last_card._rank + 1; i < 15; i++)
-			{
-				if (_cnts[i] >= 2) results.push_back(CardGroup({ Card(i), Card(i) }, Category::DOUBLE, i));
-			}
-		}
-		else if (last_card._category == Category::TRIPLE)
-		{
-			for (int i = last_card._rank + 1; i < 15; i++)
-			{
-				if (_cnts[i] >= 3) results.push_back(CardGroup({ Card(i), Card(i), Card(i) }, Category::TRIPLE, i));
-			}
-		}
-		else if (last_card._category == Category::QUADRIC)
-		{
-			for (int i = last_card._rank + 1; i < 15; i++)
-			{
-				if (_cnts[i] >= 4) results.push_back(CardGroup({ Card(i), Card(i), Card(i), Card(i) }, Category::QUADRIC, i));
-			}
-		}*/
 		return results;
 	}
-	
-	/*for (auto &action : all_actions)
-	{
-		if (includes(this->_handcards.begin(), this->_handcards.end(), action._cards.begin(), action._cards.end()) &&
-			action > last_card) {
-			results.push_back(action);
-		}
-	}*/
-	//return results;
 }
 
 CardGroup Player::respond(const CardGroup &last_card) {
@@ -208,10 +164,7 @@ CardGroup RandomPlayer::respond(const CardGroup &last_card) {
 	auto cands = candidate(last_card);
 	//cout << cands.size() << endl;
 	auto cand = cands[rand() % cands.size()];
-	for (auto c : cand._cards)
-	{
-		this->remove_card(c);
-	}
+	remove_cards(cand._cards);
 	return cand;
 }
 
@@ -222,34 +175,6 @@ CardGroup MinimaxPlayer::respond(const CardGroup &last_card) {
 	float alpha = -100.f, beta = 100.f;
 	minimax(s, best_idx, alpha, beta);
 	auto max_action = action_space[best_idx];
-	/*float max_score = -100.f;
-	CardGroup max_action;
-	for (auto &a : action_space)
-	{
-		auto last_group = s._last_group;
-		auto current_idx = s._current_idx;
-		auto current_controller = s._current_controller;
-		auto winner = s._winner;
-		auto id = s._id;
-		auto is_max = s._is_max;
-		step_ref(s, a);
-		float sc = score(s);
-		if (sc > max_score)
-		{
-			max_action = a;
-			max_score = sc;
-		}
-		for (auto c : a._cards)
-		{
-			s._players[current_idx]->add_card(c);
-		}
-		s._last_group = last_group;
-		s._current_idx = current_idx;
-		s._current_controller = current_controller;
-		s._winner = winner;
-		s._id = id;
-		s._is_max = is_max;
-	}*/
 	for (auto c : max_action._cards)
 	{
 		this->remove_card(c);
@@ -260,7 +185,7 @@ CardGroup MinimaxPlayer::respond(const CardGroup &last_card) {
 ostream& operator <<(ostream& os, const Player& c) {
 	for (auto c : c._handcards)
 	{
-		os << c;
+		os << c << ", ";
 	}
 	return os;
 }

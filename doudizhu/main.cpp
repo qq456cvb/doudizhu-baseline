@@ -6,8 +6,8 @@ extern vector<CardGroup> all_actions;
 int main() {
 	//cout << all_actions.size() << endl;
 	Env env;
-	int cnt[2] = { 0, 0 };
-	for (int i = 0; i < 1000; i++)
+	int cnt[3] = { 0, 0 };
+	for (int i = 0; i < 100; i++)
 	{
 		env.reset();
 		bool done = false;
@@ -18,6 +18,6 @@ int main() {
 		cnt[winner]++;
 		cout << winner << endl;
 	}
-	cout << cnt[0] << ", " << cnt[1] << endl;
+	cout << cnt[0] << ", " << cnt[1] + cnt[2] << endl;
 	system("pause");
 }

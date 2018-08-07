@@ -14,6 +14,8 @@ public:
 	void reset();
 	void add_card(Card card);
 	void remove_card(Card card);
+	void remove_cards(vector<Card> cards);
+	void calc_avail_actions();
 	bool over();
 	vector<CardGroup> candidate(const CardGroup &last_card);
 	virtual CardGroup respond(const CardGroup &last_card);
