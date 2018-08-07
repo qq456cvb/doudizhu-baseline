@@ -42,17 +42,14 @@ State::~State() {
 	}
 }
 
-vector<CardGroup> State::get_action_space() const {
+vector<vector<CardGroup>::iterator> State::get_action_space() const {
 	return _players[_current_idx]->candidate(_last_group);
 }
 
 State *step(const State &s, const CardGroup &cg) {
 	State *sprime = new State(s);
 	CardGroup	respondence = cg;
-	for (auto c : cg._cards)
-	{
-		sprime->_players[sprime->_current_idx]->remove_card(c);
-	}
+	sprime->_players[sprime->_current_idx]->remove_cards(cg._cards);
 
 	auto next_idx = (sprime->_current_idx + 1) % 2;
 	if (respondence._category != Category::EMPTY)
@@ -77,10 +74,7 @@ State *step(const State &s, const CardGroup &cg) {
 
 void step_ref(State &s, const CardGroup &cg) {
 	CardGroup	respondence = cg;
-	for (auto c : cg._cards)
-	{
-		s._players[s._current_idx]->remove_card(c);
-	}
+	s._players[s._current_idx]->remove_cards(cg._cards);
 
 	s._is_max = !s._is_max;
 	auto next_idx = (s._current_idx + 1) % 2;
@@ -127,7 +121,7 @@ float minimax(State &s, int &best_idx, float alpha, float beta) {
 	int tmp = 0;
 	for (int i = 0; i < action_space.size(); i++)
 	{
-		auto &a = action_space[i];
+		auto &a = *action_space[i];
 		auto last_group = s._last_group;
 		auto current_idx = s._current_idx;
 		auto current_controller = s._current_controller;

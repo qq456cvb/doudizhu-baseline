@@ -24,7 +24,7 @@
     <ClInclude Include="card.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="minimax.h">
+    <ClInclude Include="mctree.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -41,7 +41,7 @@
     <ClCompile Include="card.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="minimax.cpp">
+    <ClCompile Include="mctree.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

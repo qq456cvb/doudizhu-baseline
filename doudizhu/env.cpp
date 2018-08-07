@@ -80,6 +80,12 @@ void Env::reset() {
 	{
 		_players[i]->calc_avail_actions();
 	}
+	cout << *_players[0] << endl;
+	for (auto cg : _players[0]->_avail_actions)
+	{
+		cout << cg << endl;
+	}
+	cout << "available actions: " << _players[0]->_avail_actions.size() << endl;
 #ifdef DEBUG
 	cout << *_players[0] << endl << *_players[1] << endl << *_players[2] << endl;
 #endif

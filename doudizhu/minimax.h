@@ -33,7 +33,7 @@ public:
 	State(const Env &env);
 	~State();
 
-	vector<CardGroup> get_action_space() const;
+	vector<vector<CardGroup>::iterator> get_action_space() const;
 
 	bool operator==(const State &other) const {
 		return _id == other._id && _last_group == other._last_group

@@ -117,14 +117,14 @@
   <ItemGroup>
     <ClInclude Include="card.h" />
     <ClInclude Include="env.h" />
-    <ClInclude Include="minimax.h" />
+    <ClInclude Include="mctree.h" />
     <ClInclude Include="player.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="card.cpp" />
     <ClCompile Include="env.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="minimax.cpp" />
+    <ClCompile Include="mctree.cpp" />
     <ClCompile Include="player.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

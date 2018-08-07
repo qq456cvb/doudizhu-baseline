@@ -7,7 +7,7 @@ int main() {
 	//cout << all_actions.size() << endl;
 	Env env;
 	int cnt[3] = { 0, 0 };
-	for (int i = 0; i < 100; i++)
+	for (int i = 0; i < 1000; i++)
 	{
 		env.reset();
 		bool done = false;
@@ -17,6 +17,7 @@ int main() {
 		}
 		cnt[winner]++;
 		cout << winner << endl;
+		cin.get();
 	}
 	cout << cnt[0] << ", " << cnt[1] + cnt[2] << endl;
 	system("pause");

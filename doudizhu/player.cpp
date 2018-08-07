@@ -3,7 +3,7 @@
 #include "assert.h"
 #include <iostream>
 #include <sstream>
-#include "minimax.h"
+#include "mctree.h"
 
 extern vector<CardGroup> all_actions;
 
@@ -126,7 +126,9 @@ void Player::remove_cards(vector<Card> cards) {
 
 void Player::calc_avail_actions() {
 	for (const auto &action : all_actions) {
-		if (includes(_handcards.begin(), _handcards.end(), action._cards.begin(), action._cards.end()))
+		auto cards = action._cards;
+		sort(cards.begin(), cards.end());
+		if (includes(_handcards.begin(), _handcards.end(), cards.begin(), cards.end()))
 		{
 			_avail_actions.push_back(action);
 		}
@@ -137,23 +139,29 @@ bool Player::over() {
 	return this->_handcards.empty();
 }
 
-vector<CardGroup> Player::candidate(const CardGroup &last_card) {
+vector<vector<CardGroup>::iterator> Player::candidate(const CardGroup &last_card) {
+	vector<vector<CardGroup>::iterator> its;
 	if (last_card._category == Category::EMPTY)
 	{
-		return _avail_actions;
+		its.reserve(_avail_actions.size() - 1);
+		for (auto it = _avail_actions.begin() + 1; it != _avail_actions.end(); it++) {
+			its.push_back(it);
+		}
+		return its;
 	}
 	else {
-		vector<CardGroup> results;
-		results.push_back(CardGroup({}, Category::EMPTY, 0));
-		for (const auto &cg : _avail_actions)
-		{
-			if (cg > last_card)
+		for (auto it = _avail_actions.begin(); it != _avail_actions.end(); it++) {
+			if (*it > last_card)
 			{
-				results.push_back(cg);
+				its.push_back(it);
 			}
 		}
-		return results;
+		return its;
 	}
+}
+
+const vector<CardGroup> &Player::get_avail_actions() const {
+	return _avail_actions;
 }
 
 CardGroup Player::respond(const CardGroup &last_card) {
@@ -164,22 +172,35 @@ CardGroup RandomPlayer::respond(const CardGroup &last_card) {
 	auto cands = candidate(last_card);
 	//cout << cands.size() << endl;
 	auto cand = cands[rand() % cands.size()];
-	remove_cards(cand._cards);
-	return cand;
+	remove_cards(cand->_cards);
+	return *cand;
 }
 
 CardGroup MinimaxPlayer::respond(const CardGroup &last_card) {
-	State s(*this->_env);
+	/*State s(*this->_env);
 	auto action_space = s.get_action_space();
 	int best_idx = 0;
 	float alpha = -100.f, beta = 100.f;
 	minimax(s, best_idx, alpha, beta);
 	auto max_action = action_space[best_idx];
-	for (auto c : max_action._cards)
-	{
-		this->remove_card(c);
-	}
-	return max_action;
+	remove_cards(max_action->_cards);
+	return *max_action;*/
+	auto cands = candidate(last_card);
+	//cout << cands.size() << endl;
+	auto cand = cands[rand() % cands.size()];
+	remove_cards(cand->_cards);
+	return *cand;
+}
+
+CardGroup MCPlayer::respond(const CardGroup &last_card) {
+	State *s = new State(*this->_env);
+	auto action_space = s->get_action_space();
+	MCTree tree(s, sqrtf(2.f));
+	tree.search(8, 100);
+	vector<int> cnts = tree.predict();
+	auto cand = *action_space[max_element(cnts.begin(), cnts.end()) - cnts.begin()];
+	remove_cards(cand._cards);
+	return cand;
 }
 
 ostream& operator <<(ostream& os, const Player& c) {

@@ -45,14 +45,14 @@ ostream& operator<<(ostream& os, const Card& c);
 class CardGroup {
 public:
 	CardGroup() {};
-	CardGroup(const vector<Card> &cards, Category category, int rank)
-		: _cards(cards), _category(category), _rank(rank)
+	CardGroup(const vector<Card> &cards, Category category, int rank, int len = 1)
+		: _cards(cards), _category(category), _rank(rank), _len(len)
 	{
 	};
 
 	vector<Card> _cards;
 	Category _category;
-	int _rank;
+	int _rank, _len;
 
 	bool operator==(const CardGroup &other) const {
 		return _category == other._category && _rank == other._rank;
@@ -81,7 +81,7 @@ public:
 			return false;
 		}
 		else {
-			return this->_rank > other._rank;
+			return this->_rank > other._rank && this->_len == other._len;
 		}
 	}
 	friend ostream& operator<<(ostream& os, const CardGroup& cg);

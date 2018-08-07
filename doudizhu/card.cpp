@@ -102,7 +102,7 @@ vector<CardGroup> get_all_actions() {
 				cards.push_back(Card(k));
 			}
 			assert(cards.size() >= 5);
-			actions.push_back(CardGroup(cards, Category::SINGLE_LINE, i));
+			actions.push_back(CardGroup(cards, Category::SINGLE_LINE, i, cards.size()));
 		}
 		for (size_t j = i + 3; j < 13; j++)
 		{
@@ -115,7 +115,7 @@ vector<CardGroup> get_all_actions() {
 			assert(cards.size() >= 6);
 			if (cards.size() <= 20)
 			{
-				actions.push_back(CardGroup(cards, Category::DOUBLE_LINE, i));
+				actions.push_back(CardGroup(cards, Category::DOUBLE_LINE, i, cards.size() / 2));
 			}
 		}
 		for (size_t j = i + 2; j < 13; j++)
@@ -130,7 +130,7 @@ vector<CardGroup> get_all_actions() {
 			assert(cards.size() >= 6);
 			if (cards.size() <= 20)
 			{
-				actions.push_back(CardGroup(cards, Category::TRIPLE_LINE, i));
+				actions.push_back(CardGroup(cards, Category::TRIPLE_LINE, i, cards.size() / 3));
 			}
 			size_t len = cards.size() / 3;
 			vector<vector<Card>> kickers = { {} };
@@ -143,7 +143,7 @@ vector<CardGroup> get_all_actions() {
 				cards_kickers.insert(cards_kickers.end(), kicker.begin(), kicker.end());
 				if (cards_kickers.size() <= 20)
 				{
-					actions.push_back(CardGroup(cards_kickers, Category::THREE_ONE_LINE, i));
+					actions.push_back(CardGroup(cards_kickers, Category::THREE_ONE_LINE, i, len));
 				}
 			}
 			if (len < 5)
@@ -157,7 +157,7 @@ vector<CardGroup> get_all_actions() {
 					cards_kickers.insert(cards_kickers.end(), kicker.begin(), kicker.end());
 					if (cards_kickers.size() <= 20)
 					{
-						actions.push_back(CardGroup(cards_kickers, Category::THREE_TWO_LINE, i));
+						actions.push_back(CardGroup(cards_kickers, Category::THREE_TWO_LINE, i, len));
 					}
 				}
 			}
