@@ -26,6 +26,14 @@ enum class Card {
 	FIVE = 2,
 	SIX = 3,
 	SEVEN = 4,
+	EIGHT = 5,
+	NINE = 6,
+	TEN = 7,
+	JACK = 8,
+	QUEEN = 9,
+	KING = 10,
+	ACE = 11,
+	TWO = 12,
 	BLACK_JOKER = 13,
 	RED_JOKER = 14
 
@@ -49,7 +57,7 @@ public:
 	bool operator==(const CardGroup &other) const {
 		return _category == other._category && _rank == other._rank;
 	}
-	bool operator>(const CardGroup &other) {
+	bool operator>(const CardGroup &other) const {
 		if (this->_category == Category::EMPTY) return other._category != Category::EMPTY;
 		if (other._category == Category::EMPTY) return true;
 		if (this->_category == Category::BIGBANG)

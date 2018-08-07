@@ -154,7 +154,7 @@ vector<CardGroup> Player::candidate(const CardGroup &last_card) {
 		results.push_back(CardGroup({}, Category::EMPTY, 0));
 		for (const auto &cg : _avail_actions)
 		{
-			if ((cg._category == last_card._category && cg._rank > last_card._rank) || cg._category == Category::BIGBANG)
+			if (cg > last_card)
 			{
 				results.push_back(cg);
 			}
