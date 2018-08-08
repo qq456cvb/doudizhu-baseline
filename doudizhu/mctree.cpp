@@ -167,11 +167,9 @@ Node* MCTree::explore(Node* node, float& val, mt19937 &generator) {
 	if (edge->dest) {
 		if (edge->terminiated) {
 			val = edge->r;
-			lock.unlock();
 			return edge->dest;
 		}
 		else {
-			lock.unlock();
 			return explore(edge->dest, val, generator);
 		}
 	}
@@ -195,18 +193,10 @@ Node* MCTree::explore(Node* node, float& val, mt19937 &generator) {
 			}
 			edge->terminiated = true;
 			val = edge->r;
-			lock.unlock();
 			return edge->dest;
 		}
 		lock.unlock();
-		// cout << "rollout ";
 		val = rollout(edge->dest, generator);
-		// cout << val << endl;
-		// if (val != 0) {
-		//     cout << val << ", ";
-		// }
-
-
 		return edge->dest;
 	}
 }
