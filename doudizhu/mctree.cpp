@@ -49,10 +49,10 @@ vector<vector<CardGroup>::iterator> State::get_action_space() const {
 Node::Node(Edge *src, State *st, vector<float> priors) {
 	this->st = st;
 	this->actions = st->get_action_space();
-	if (this->actions.size() > 300)
+	/*if (this->actions.size() > 300)
 	{
 		cout << "large branching factor" << endl;
-	}
+	}*/
 	if (priors.empty() && !this->actions.empty()) {
 		priors = vector<float>(this->actions.size(), 1.f / this->actions.size());
 	}
@@ -110,7 +110,7 @@ Edge* Node::choose(float c) {
 
 MCTree::MCTree(State* st, float c) {
 	this->root = new Node(nullptr, st);
-	cout << root->actions.size() << endl;
+	//cout << root->actions.size() << endl;
 	this->counter = 0;
 	this->c = c;
 }
@@ -226,28 +226,19 @@ void MCTree::backup(Node* node, float val) {
 
 float MCTree::rollout(Node* node, mt19937 &generator) {
 	auto st = node->st;
-	bool first_time = true;
-	while (st->_id != StateId::FINISHED) {
-		auto actions = st->get_action_space();
-		 //cout << st->_current_idx << ": " << static_cast<int>(st->_id) << ", ";
-		// cout << actions.size() << endl;
-		auto last_st = st;
-		st = step(*st, actions[generator() % actions.size()]);
-		if (!first_time) {
-			delete last_st;
-		}
-		if (first_time) {
-			first_time = false;
-		}
+	auto s = State(*st);
+	while (s._id != StateId::FINISHED) {
+		auto actions = s.get_action_space();
+		step_ref(s, actions[generator() % actions.size()]);
 	}
 	float r = 0;
 	// cout << st->winner << endl;
-	if (st->_winner == st->_target_idx)
+	if (s._winner == s._target_idx)
 	{
 		r = 1.f;
 	}
 	else {
-		if (st->_target_idx + st->_winner == 3)
+		if (s._target_idx + s._winner == 3)
 		{
 			r = 1.f;
 		}
@@ -255,7 +246,6 @@ float MCTree::rollout(Node* node, mt19937 &generator) {
 			r = 0.f;
 		}
 	}
-	delete st;
 	return r;
 }
 
@@ -269,16 +259,40 @@ vector<int> MCTree::predict() {
 	return cnts;
 }
 
+void step_ref(State &s, const vector<CardGroup>::iterator &a) {
+	auto cg = *a;
+	s._players[s._current_idx]->remove_cards(a->_cards);
+
+	auto next_idx = (s._current_idx + 1) % 3;
+	if (cg._category != Category::EMPTY)
+	{
+		s._current_controller = s._current_idx;
+		s._last_group = cg;
+		if (s._players[s._current_idx]->over())
+		{
+			s._winner = s._current_idx;
+			s._id = StateId::FINISHED;
+			return;
+		}
+	}
+	if (next_idx == s._current_controller)
+	{
+		s._last_group = CardGroup({}, Category::EMPTY, 0);
+	}
+	s._current_idx = next_idx;
+	return;
+}
 
 State* step(const State& s, const vector<CardGroup>::iterator &a) {
+	auto cg = *a;
 	State *sprime = new State(s);
 	sprime->_players[sprime->_current_idx]->remove_cards(a->_cards);
 
 	auto next_idx = (sprime->_current_idx + 1) % 3;
-	if (a->_category != Category::EMPTY)
+	if (cg._category != Category::EMPTY)
 	{
 		sprime->_current_controller = sprime->_current_idx;
-		sprime->_last_group = *a;
+		sprime->_last_group = cg;
 		if (sprime->_players[sprime->_current_idx]->over())
 		{
 			sprime->_winner = sprime->_current_idx;

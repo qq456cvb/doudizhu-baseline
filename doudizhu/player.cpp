@@ -3,6 +3,7 @@
 #include "assert.h"
 #include <iostream>
 #include <sstream>
+#include "env.h"
 #include "mctree.h"
 
 extern vector<CardGroup> all_actions;
@@ -46,7 +47,6 @@ void Player::add_card(Card card) {
 	insert_sorted(this->_handcards, card, [](const Card &c1, const Card &c2) {
 		return static_cast<int>(c1) < static_cast<int>(c2);
 	});
-	this->_cnts[static_cast<int>(card)]++;
 }
 
 void Player::remove_card(Card card) {
@@ -125,6 +125,12 @@ void Player::remove_cards(vector<Card> cards) {
 }
 
 void Player::calc_avail_actions() {
+	_avail_actions.clear();
+	fill(_cnts.begin(), _cnts.end(), 0);
+	for (const auto &c : _handcards)
+	{
+		_cnts[static_cast<int>(c)]++;
+	}
 	for (const auto &action : all_actions) {
 		auto cards = action._cards;
 		sort(cards.begin(), cards.end());
@@ -176,30 +182,41 @@ CardGroup RandomPlayer::respond(const CardGroup &last_card) {
 	return *cand;
 }
 
-CardGroup MinimaxPlayer::respond(const CardGroup &last_card) {
-	/*State s(*this->_env);
-	auto action_space = s.get_action_space();
-	int best_idx = 0;
-	float alpha = -100.f, beta = 100.f;
-	minimax(s, best_idx, alpha, beta);
-	auto max_action = action_space[best_idx];
-	remove_cards(max_action->_cards);
-	return *max_action;*/
-	auto cands = candidate(last_card);
-	//cout << cands.size() << endl;
-	auto cand = cands[rand() % cands.size()];
-	remove_cards(cand->_cards);
-	return *cand;
-}
-
 CardGroup MCPlayer::respond(const CardGroup &last_card) {
 	State *s = new State(*this->_env);
 	auto action_space = s->get_action_space();
-	MCTree tree(s, sqrtf(2.f));
-	tree.search(8, 100);
-	vector<int> cnts = tree.predict();
-	auto cand = *action_space[max_element(cnts.begin(), cnts.end()) - cnts.begin()];
+	vector<int> total_cnts(action_space.size(), 0);
+
+	// random shuffle other player's card, determinized UCT
+	int idx1 = (_env->_current_idx + 1) % 3, idx2 = (_env->_current_idx + 2) % 3;
+	vector<Card> unseen_cards = _env->_players[idx1]->_handcards;
+	unseen_cards.insert(unseen_cards.end(), _env->_players[idx2]->_handcards.begin(), _env->_players[idx2]->_handcards.end());
+	for (size_t d = 0; d < 50; d++)
+	{
+		State *ss = new State(*s);
+		shuffle(unseen_cards.begin(), unseen_cards.end(), _env->_generator);
+		ss->_players[idx1]->_handcards = vector<Card>(unseen_cards.begin(), unseen_cards.begin() + _env->_players[idx1]->_handcards.size());
+		sort(ss->_players[idx1]->_handcards.begin(), ss->_players[idx1]->_handcards.end());
+		ss->_players[idx1]->calc_avail_actions();
+		ss->_players[idx2]->_handcards = vector<Card>(unseen_cards.begin() + _env->_players[idx1]->_handcards.size(), unseen_cards.end());
+		sort(ss->_players[idx2]->_handcards.begin(), ss->_players[idx2]->_handcards.end());
+		ss->_players[idx2]->calc_avail_actions();
+		MCTree tree(ss, sqrtf(2.f));
+		tree.search(8, 250);
+		vector<int> cnts = tree.predict();
+		for (size_t i = 0; i < action_space.size(); i++)
+		{
+			total_cnts[i] += cnts[i];
+		}
+	}
+
+	/*MCTree tree(s, sqrtf(2.f));
+	tree.search(8, 2500);
+	total_cnts = tree.predict();*/
+	
+	auto cand = *action_space[max_element(total_cnts.begin(), total_cnts.end()) - total_cnts.begin()];
 	remove_cards(cand._cards);
+	delete s;
 	return cand;
 }
 

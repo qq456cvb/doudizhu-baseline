@@ -91,5 +91,5 @@ public:
 	vector<int> predict();
 };
 
-
+void step_ref(State &s, const vector<CardGroup>::iterator &a);
 State* step(const State& s, const vector<CardGroup>::iterator &a);

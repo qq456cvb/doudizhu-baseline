@@ -26,10 +26,11 @@ public:
 
 	vector<int> _cnts;
 	vector<CardGroup> _avail_actions;
-private:
 	vector<Card> _handcards;
+private:
 	
 protected:
+	
 	Env *_env;
 	
 };
@@ -41,13 +42,6 @@ public:
 	CardGroup respond(const CardGroup &last_card) override;
 protected:
 private:
-};
-
-class MinimaxPlayer : public Player
-{
-public:
-	MinimaxPlayer(Env *env) : Player(env) {};
-	CardGroup respond(const CardGroup &last_card) override;
 };
 
 class MCPlayer : public Player
