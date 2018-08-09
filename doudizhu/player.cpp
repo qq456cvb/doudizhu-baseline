@@ -183,6 +183,19 @@ CardGroup RandomPlayer::respond(const CardGroup &last_card) {
 	return *cand;
 }
 
+void MCPlayer::multisearch(vector<int> &cnts, State *root) {
+	MCTree tree(root, sqrtf(2.f));
+	tree.search(n_threads, max_iter);
+	vector<int> tree_cnts = tree.predict();
+	{
+		lock_guard<mutex> lock(mu);
+		for (size_t i = 0; i < tree.root->edges.size(); i++)
+		{
+			cnts[i] += tree_cnts[i];
+		}
+	}
+}
+
 CardGroup MCPlayer::respond(const CardGroup &last_card) {
 	State *s = new State(*this->_env);
 	auto action_space = s->get_action_space();
@@ -192,6 +205,7 @@ CardGroup MCPlayer::respond(const CardGroup &last_card) {
 	int idx1 = (_env->_current_idx + 1) % 3, idx2 = (_env->_current_idx + 2) % 3;
 	vector<Card> unseen_cards = _env->_players[idx1]->_handcards;
 	unseen_cards.insert(unseen_cards.end(), _env->_players[idx2]->_handcards.begin(), _env->_players[idx2]->_handcards.end());
+	vector<thread> threads;
 	for (size_t d = 0; d < max_d; d++)
 	{
 		State *ss = new State(*s);
@@ -202,14 +216,27 @@ CardGroup MCPlayer::respond(const CardGroup &last_card) {
 		ss->_players[idx2]->_handcards = vector<Card>(unseen_cards.begin() + _env->_players[idx1]->_handcards.size(), unseen_cards.end());
 		sort(ss->_players[idx2]->_handcards.begin(), ss->_players[idx2]->_handcards.end());
 		ss->_players[idx2]->calc_avail_actions();
-		MCTree tree(ss, sqrtf(2.f));
+
+		threads.push_back(std::move(std::thread(&MCPlayer::multisearch, this, std::ref(total_cnts), ss)));
+		if ((d + 1) % 4 == 0 || d == max_d - 1)
+		{
+			for (auto& t : threads) {
+				t.join();
+			}
+			threads.clear();
+		}
+		
+		
+		/*MCTree tree(ss, sqrtf(2.f));
 		tree.search(n_threads, max_iter);
 		vector<int> cnts = tree.predict();
 		for (size_t i = 0; i < action_space.size(); i++)
 		{
 			total_cnts[i] += cnts[i];
-		}
+		}*/
 	}
+
+	
 
 	/*MCTree tree(s, sqrtf(2.f));
 	tree.search(8, 2500);

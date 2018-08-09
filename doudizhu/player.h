@@ -1,6 +1,8 @@
 #pragma once
 #include <vector>
 #include "card.h"
+#include <thread>
+#include <mutex>
 using namespace std;
 
 class Env;
@@ -40,16 +42,18 @@ class RandomPlayer : public Player
 public:
 	RandomPlayer(Env *env) : Player(env) {};
 	CardGroup respond(const CardGroup &last_card) override;
-protected:
-private:
 };
+
+
+class State;
 
 class MCPlayer : public Player
 {
 public:
 	MCPlayer(Env *env) : Player(env) {};
 	CardGroup respond(const CardGroup &last_card) override;
+	void multisearch(vector<int> &cnts, State *root);
 
 private:
-
+	mutex mu;
 };

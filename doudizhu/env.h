@@ -6,7 +6,7 @@
 #include <iostream>
 using namespace std;
 
-// #define DEBUG
+ #define DEBUG
 
 class Env {
 public:
