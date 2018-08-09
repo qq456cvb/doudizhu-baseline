@@ -200,7 +200,7 @@ ostream& operator<<(ostream& os, const Card& c) {
 	}
 	else if (c == Card::TEN)
 	{
-		os << "10";
+		os << "X";
 	}
 	else if (c == Card::JACK)
 	{
