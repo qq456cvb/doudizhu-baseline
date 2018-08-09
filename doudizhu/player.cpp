@@ -11,6 +11,8 @@
 extern vector<CardGroup> all_actions;
 extern unordered_set<Category> kicker_set;
 
+int n_threads, max_d, max_iter;
+
 template< typename T, typename Pred >
 typename std::vector<T>::iterator
 insert_sorted(std::vector<T> & vec, T const& item, Pred pred)
@@ -265,7 +267,7 @@ CardGroup MCPlayer::respond(const CardGroup &last_card) {
 	int idx1 = (_env->_current_idx + 1) % 3, idx2 = (_env->_current_idx + 2) % 3;
 	vector<Card> unseen_cards = _env->_players[idx1]->_handcards;
 	unseen_cards.insert(unseen_cards.end(), _env->_players[idx2]->_handcards.begin(), _env->_players[idx2]->_handcards.end());
-	for (size_t d = 0; d < 50; d++)
+	for (size_t d = 0; d < max_d; d++)
 	{
 		State *ss = new State(*s);
 		shuffle(unseen_cards.begin(), unseen_cards.end(), _env->_generator);
@@ -276,7 +278,7 @@ CardGroup MCPlayer::respond(const CardGroup &last_card) {
 		sort(ss->_players[idx2]->_handcards.begin(), ss->_players[idx2]->_handcards.end());
 		ss->_players[idx2]->calc_avail_actions();
 		MCTree tree(ss, sqrtf(2.f));
-		tree.search(8, 250);
+		tree.search(n_threads, max_iter);
 		tree.predict(&scores);
 	}
 

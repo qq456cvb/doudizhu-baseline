@@ -6,7 +6,7 @@
 #include <iostream>
 using namespace std;
 
-#define DEBUG
+//#define DEBUG
 
 class Env {
 public:
@@ -22,8 +22,8 @@ public:
 	bool step(int &winner);
 
 	Env() : _last_group({}, Category::EMPTY, 0) {
-		//auto seed = random_device{}();
-		auto seed = 3315165239;
+		auto seed = random_device{}();
+		//auto seed = 3315165239;
 		cout << "seeding " << seed << endl;
 		this->_generator = mt19937(seed);
 		//this->_players.push_back(new MCPlayer(this));
