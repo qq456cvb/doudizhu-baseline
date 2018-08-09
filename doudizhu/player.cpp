@@ -185,7 +185,7 @@ CardGroup RandomPlayer::respond(const CardGroup &last_card) {
 
 void MCPlayer::multisearch(vector<int> &cnts, State *root) {
 	MCTree tree(root, sqrtf(2.f));
-	tree.search(n_threads, max_iter);
+	tree.search(n_threads / 2, max_iter);
 	vector<int> tree_cnts = tree.predict();
 	{
 		lock_guard<mutex> lock(mu);
@@ -218,7 +218,7 @@ CardGroup MCPlayer::respond(const CardGroup &last_card) {
 		ss->_players[idx2]->calc_avail_actions();
 
 		threads.push_back(std::move(std::thread(&MCPlayer::multisearch, this, std::ref(total_cnts), ss)));
-		if ((d + 1) % 4 == 0 || d == max_d - 1)
+		if ((d + 1) % 2 == 0 || d == max_d - 1)
 		{
 			for (auto& t : threads) {
 				t.join();
