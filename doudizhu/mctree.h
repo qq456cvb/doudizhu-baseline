@@ -13,6 +13,7 @@
 
 using namespace std;
 
+#define NEG_REWARD -1.f
 
 enum class StateId {
 	NORMAL = 0,

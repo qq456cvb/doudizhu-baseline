@@ -190,7 +190,7 @@ Node* MCTree::explore(Node* node, float& val, mt19937 &generator) {
 				{
 					edge->r = 1.f;
 				} else {
-					edge->r = 0.f;
+					edge->r = NEG_REWARD;
 				}
 			}
 			edge->terminiated = true;
@@ -243,7 +243,7 @@ float MCTree::rollout(Node* node, mt19937 &generator) {
 			r = 1.f;
 		}
 		else {
-			r = 0.f;
+			r = NEG_REWARD;
 		}
 	}
 	return r;
