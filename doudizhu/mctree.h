@@ -9,6 +9,7 @@
 #include <thread>
 #include <mutex>
 #include <shared_mutex>
+#include <unordered_map>
 #include <random>
 
 using namespace std;
@@ -19,18 +20,33 @@ enum class StateId {
 	FINISHED = 1
 };
 
+struct HashNode {
+	unordered_map<HashNode*, int> _cnt_map;
+	CardGroup _cg;
+	~HashNode()
+	{
+		for (const auto &p : _cnt_map)
+		{
+			delete p.first;
+		}
+	}
+};
+
+// TODO: use compact data type
 class State {
 public:
-	CardGroup _last_group;
+	CardGroup _last_group, _cache_cg;
 	StateId _id;
 	vector<Player*> _players;
 	int _current_idx, _current_controller, _winner, _target_idx;
+	uint8_t _remain_len;
+	bool _single;
 
 	State(const State &s);
 	State(const Env &env);
 	~State();
 
-	vector<vector<CardGroup>::iterator> get_action_space() const;
+	vector<vector<CardGroup>::iterator> get_action_space(bool all = false) const;
 };
 
 
@@ -88,7 +104,7 @@ public:
 	Node *explore(Node *node, float&val, mt19937 &generator);
 	void backup(Node *node, float val);
 	float rollout(Node *node, mt19937 &generator);
-	vector<int> predict();
+	void predict(HashNode *node);
 };
 
 void step_ref(State &s, const vector<CardGroup>::iterator &a);

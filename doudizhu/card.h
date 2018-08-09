@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <xhash>
 using namespace std;
 
 enum class Category {
@@ -19,6 +20,11 @@ enum class Category {
 	FOUR_TAKE_ONE = 13,
 	FOUR_TAKE_TWO = 14
 };
+
+template<typename T>
+void hash_combine(size_t &seed, T const &v) {
+	seed ^= hash_value(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
 
 enum class Card {
 	THREE = 0,
@@ -55,7 +61,7 @@ public:
 	int _rank, _len;
 
 	bool operator==(const CardGroup &other) const {
-		return _category == other._category && _rank == other._rank;
+		return _cards == other._cards;
 	}
 	bool operator>(const CardGroup &other) const {
 		if (this->_category == Category::EMPTY) return other._category != Category::EMPTY;
@@ -84,5 +90,25 @@ public:
 			return this->_rank > other._rank && this->_len == other._len;
 		}
 	}
+	bool operator<(const CardGroup &other) const {
+		return other > *this;
+	}
 	friend ostream& operator<<(ostream& os, const CardGroup& cg);
+};
+
+template <>
+struct hash<CardGroup>
+{
+	std::size_t operator()(const CardGroup &cg) const
+	{
+		using std::size_t;
+		using std::hash;
+
+		size_t h = 0;
+		for (auto &c : cg._cards)
+		{
+			hash_combine(h, static_cast<int>(c));
+		}
+		return h;
+	}
 };

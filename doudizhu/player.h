@@ -17,7 +17,9 @@ public:
 	void remove_cards(vector<Card> cards);
 	void calc_avail_actions();
 	bool over();
-	vector<vector<CardGroup>::iterator> candidate(const CardGroup &last_card);
+	vector<vector<CardGroup>::iterator> candidate(const CardGroup &last_card, bool all = false);
+	vector<vector<CardGroup>::iterator> get_singles(const CardGroup &filter);
+	vector<vector<CardGroup>::iterator> get_doubles(const CardGroup &filter);
 	const vector<CardGroup> &get_avail_actions() const;
 	virtual CardGroup respond(const CardGroup &last_card);
 	string to_str();

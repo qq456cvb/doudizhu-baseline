@@ -3,7 +3,10 @@
 #include <iterator>
 #include <assert.h>
 #include <windows.h>
+#include <unordered_set>
 
+unordered_set<Category> kicker_set = { Category::THREE_ONE, Category::THREE_ONE_LINE, Category::THREE_TWO,
+	Category::THREE_TWO_LINE, Category::FOUR_TAKE_ONE, Category::FOUR_TAKE_TWO };
 
 // Nuke can not be used as kicker, different from Python side, 
 // TODO: modify the Python side
@@ -67,7 +70,7 @@ vector<CardGroup> get_all_actions() {
 		{
 			auto cards_kickers = main_cards;
 			cards_kickers.insert(cards_kickers.end(), kicker.begin(), kicker.end());
-			actions.push_back(CardGroup(cards_kickers, Category::FOUR_TAKE_ONE, i));
+			actions.push_back(CardGroup(cards_kickers, Category::FOUR_TAKE_ONE, i, 2));
 		}
 		kickers.clear();
 		kickers.push_back({});
@@ -76,7 +79,7 @@ vector<CardGroup> get_all_actions() {
 		{
 			auto cards_kickers = main_cards;
 			cards_kickers.insert(cards_kickers.end(), kicker.begin(), kicker.end());
-			actions.push_back(CardGroup(cards_kickers, Category::FOUR_TAKE_TWO, i));
+			actions.push_back(CardGroup(cards_kickers, Category::FOUR_TAKE_TWO, i, 2));
 		}
 	}
 	for (int i = 0; i < 13; i++)

@@ -5,8 +5,11 @@
 #include <sstream>
 #include "env.h"
 #include "mctree.h"
+#include <unordered_set>
+#include <unordered_map>
 
 extern vector<CardGroup> all_actions;
+extern unordered_set<Category> kicker_set;
 
 template< typename T, typename Pred >
 typename std::vector<T>::iterator
@@ -145,25 +148,85 @@ bool Player::over() {
 	return this->_handcards.empty();
 }
 
-vector<vector<CardGroup>::iterator> Player::candidate(const CardGroup &last_card) {
+vector<vector<CardGroup>::iterator> Player::candidate(const CardGroup &last_card, bool all) {
 	vector<vector<CardGroup>::iterator> its;
+	bool category_cache[15][13][5] = { false };
 	if (last_card._category == Category::EMPTY)
 	{
 		its.reserve(_avail_actions.size() - 1);
-		for (auto it = _avail_actions.begin() + 1; it != _avail_actions.end(); it++) {
-			its.push_back(it);
-		}
-		return its;
-	}
-	else {
-		for (auto it = _avail_actions.begin(); it != _avail_actions.end(); it++) {
-			if (*it > last_card)
-			{
+		if (!all)
+		{
+			for (auto it = _avail_actions.begin() + 1; it != _avail_actions.end(); it++) {
+				auto category = it->_category;
+				if (kicker_set.find(category) != kicker_set.end())
+				{
+					if (!category_cache[static_cast<int>(category)][it->_rank][it->_len])
+					{
+						category_cache[static_cast<int>(category)][it->_rank][it->_len] = true;
+						its.push_back(it);
+					}
+				}
+				else {
+					its.push_back(it);
+				}
+			}
+		} else {
+			for (auto it = _avail_actions.begin() + 1; it != _avail_actions.end(); it++) {
 				its.push_back(it);
 			}
 		}
 		return its;
 	}
+	else {
+		if (!all)
+		{
+			for (auto it = _avail_actions.begin(); it != _avail_actions.end(); it++) {
+				if (*it > last_card)
+				{
+					auto category = it->_category;
+					if (kicker_set.find(category) != kicker_set.end())
+					{
+						if (!category_cache[static_cast<int>(category)][it->_rank][it->_len])
+						{
+							category_cache[static_cast<int>(category)][it->_rank][it->_len] = true;
+							its.push_back(it);
+						}
+					}
+					else {
+						its.push_back(it);
+					}
+				}
+			}
+		} else {
+			for (auto it = _avail_actions.begin(); it != _avail_actions.end(); it++) {
+				its.push_back(it);
+			}
+		}
+		
+		return its;
+	}
+}
+
+vector<vector<CardGroup>::iterator> Player::get_singles(const CardGroup &filter) {
+	vector<vector<CardGroup>::iterator> its;
+	for (auto it = _avail_actions.begin() + 1; it != _avail_actions.end(); it++) {
+		if (it->_category == Category::SINGLE && find(filter._cards.begin(), filter._cards.end(), it->_cards[0]) == filter._cards.end())
+		{
+			its.push_back(it);
+		}
+	}
+	return its;
+}
+
+vector<vector<CardGroup>::iterator> Player::get_doubles(const CardGroup &filter) {
+	vector<vector<CardGroup>::iterator> its;
+	for (auto it = _avail_actions.begin() + 1; it != _avail_actions.end(); it++) {
+		if (it->_category == Category::DOUBLE && find(filter._cards.begin(), filter._cards.end(), it->_cards[0]) == filter._cards.end())
+		{
+			its.push_back(it);
+		}
+	}
+	return its;
 }
 
 const vector<CardGroup> &Player::get_avail_actions() const {
@@ -182,10 +245,21 @@ CardGroup RandomPlayer::respond(const CardGroup &last_card) {
 	return *cand;
 }
 
+CardGroup choose(HashNode *scores) {
+	auto max_it = max_element(scores->_cnt_map.begin(), scores->_cnt_map.end());
+	if (max_it->first->_cnt_map.empty())
+	{
+		return max_it->first->_cg;
+	} else {
+		return choose(max_it->first);
+	}
+}
+
 CardGroup MCPlayer::respond(const CardGroup &last_card) {
 	State *s = new State(*this->_env);
-	auto action_space = s->get_action_space();
-	vector<int> total_cnts(action_space.size(), 0);
+	auto action_space = s->get_action_space(true);
+	//vector<int> total_cnts(action_space.size(), 0);
+	HashNode scores;
 
 	// random shuffle other player's card, determinized UCT
 	int idx1 = (_env->_current_idx + 1) % 3, idx2 = (_env->_current_idx + 2) % 3;
@@ -203,18 +277,15 @@ CardGroup MCPlayer::respond(const CardGroup &last_card) {
 		ss->_players[idx2]->calc_avail_actions();
 		MCTree tree(ss, sqrtf(2.f));
 		tree.search(8, 250);
-		vector<int> cnts = tree.predict();
-		for (size_t i = 0; i < action_space.size(); i++)
-		{
-			total_cnts[i] += cnts[i];
-		}
+		tree.predict(&scores);
 	}
 
 	/*MCTree tree(s, sqrtf(2.f));
 	tree.search(8, 2500);
 	total_cnts = tree.predict();*/
-	
-	auto cand = *action_space[max_element(total_cnts.begin(), total_cnts.end()) - total_cnts.begin()];
+	auto cand = choose(&scores);
+	//auto cand = CardGroup({}, Category::EMPTY, 0);
+	//auto cand = max_element(scores.begin(), scores.end())->first;
 	remove_cards(cand._cards);
 	delete s;
 	return cand;

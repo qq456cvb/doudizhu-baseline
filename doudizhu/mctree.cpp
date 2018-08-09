@@ -1,19 +1,23 @@
 #include "mctree.h"
 #include <math.h>
 #include <assert.h>
-#include <unordered_set>
 #include "env.h"
+#include <unordered_set>
 
 
 vector<mt19937> generators;
+extern unordered_set<Category> kicker_set;
 
 State::State(const State &s) {
 	_last_group = s._last_group;
+	_cache_cg = s._cache_cg;
 	_current_idx = s._current_idx;
 	_current_controller = s._current_controller;
 	_target_idx = s._target_idx;
 	_winner = s._winner;
 	_id = s._id;
+	_remain_len = s._remain_len;
+	_single = s._single;
 	for (size_t i = 0; i < s._players.size(); i++)
 	{
 		_players.push_back(new Player(*s._players[i]));
@@ -27,6 +31,8 @@ State::State(const Env &env) {
 	_winner = -1;
 	_id = StateId::NORMAL;
 	_target_idx = _current_idx;
+	_remain_len = 0;
+	_single = false;
 	for (size_t i = 0; i < env._players.size(); i++)
 	{
 		_players.push_back(new Player(*env._players[i]));
@@ -40,8 +46,34 @@ State::~State() {
 	}
 }
 
-vector<vector<CardGroup>::iterator> State::get_action_space() const {
-	return _players[_current_idx]->candidate(_last_group);
+// TODO: different kicker orders lead to different nodes
+vector<vector<CardGroup>::iterator> State::get_action_space(bool all) const {
+	if (_remain_len > 0)
+	{
+		if (_single)
+		{
+			auto its = _players[_current_idx]->get_singles(_cache_cg);
+			/*for (auto it = its.begin(); it < its.end(); it++)
+			{
+				if (find(_cache_cg._cards.begin(),_cache_cg._cards.end(), (*it)->_cards[0]) != _cache_cg._cards.end())
+				{
+					it = its.erase(it);
+				}
+			}*/
+			return its;
+		} else {
+			auto its = _players[_current_idx]->get_doubles(_cache_cg);
+			/*for (auto it = its.begin(); it < its.end(); it++)
+			{
+				if (find(_cache_cg._cards.begin(), _cache_cg._cards.end(), (*it)->_cards[0]) != _cache_cg._cards.end())
+				{
+					it = its.erase(it);
+				}
+			}*/
+			return its;
+		}
+	}
+	return _players[_current_idx]->candidate(_last_group, all);
 }
 
 
@@ -176,6 +208,7 @@ Node* MCTree::explore(Node* node, float& val, mt19937 &generator) {
 	else {
 		// cout << node->st->idx << ": " << static_cast<int>(node->st->id) << ", ";
 		// cout << node->st->get_action_space().size() << endl;
+		
 		State* sprime = step(*node->st, edge->action);
 		edge->dest = new Node(edge, sprime);
 
@@ -195,9 +228,15 @@ Node* MCTree::explore(Node* node, float& val, mt19937 &generator) {
 			val = edge->r;
 			return edge->dest;
 		}
+		// force step intermediate level
+		if (sprime->_remain_len > 0)
+		{
+			return explore(edge->dest, val, generator);
+		}
+		auto dest = edge->dest;
 		lock.unlock();
-		val = rollout(edge->dest, generator);
-		return edge->dest;
+		val = rollout(dest, generator);
+		return dest;
 	}
 }
 
@@ -239,19 +278,111 @@ float MCTree::rollout(Node* node, mt19937 &generator) {
 	return r;
 }
 
-vector<int> MCTree::predict() {
-	vector<int> cnts;
-	for (size_t i = 0; i < root->edges.size(); i++) {
-		// cout << root->edges[i]->q << ", ";
-		cnts.push_back(root->edges[i]->n);
+
+void predict_helper(HashNode *node, Node *s, int remain_len) {
+	if (!s) return;
+
+	if (remain_len == 0)
+	{
+		return;
 	}
-	// cout << endl;
-	return cnts;
+	for (size_t i = 0; i < s->edges.size(); i++) {
+		HashNode *next = nullptr;
+		auto it = find_if(node->_cnt_map.begin(), node->_cnt_map.end(), [&](const pair<const HashNode*, int> &p) {
+			return s->edges[i]->dest && p.first->_cg == s->edges[i]->dest->st->_cache_cg;
+		});
+		if (it != node->_cnt_map.end())
+		{
+			next = it->first;
+		}
+		else {
+			if (!s->edges[i]->dest)
+			{
+				continue;
+			}
+			next = new HashNode();
+			next->_cg = s->edges[i]->dest->st->_cache_cg;
+			node->_cnt_map[next] += s->edges[i]->n;
+		}
+		predict_helper(next, s->edges[i]->dest, remain_len - 1);
+	}
 }
 
+void MCTree::predict(HashNode *node) {
+	int cnt = 0;
+	for (size_t i = 0; i < root->edges.size(); i++) {
+		// cout << root->edges[i]->q << ", ";
+		cnt += root->edges[i]->n;
+		HashNode *next = nullptr;
+		auto it = find_if(node->_cnt_map.begin(), node->_cnt_map.end(), [&](const pair<const HashNode*, int> &p) {
+			return p.first->_cg == *root->edges[i]->action;
+		});
+		if (it != node->_cnt_map.end())
+		{
+			next = it->first;
+		} else {
+			next = new HashNode();
+			next->_cg = *root->edges[i]->action;
+			node->_cnt_map[next] += root->edges[i]->n;
+		}
+		
+		if (kicker_set.find(root->edges[i]->action->_category) != kicker_set.end())
+		{
+			auto dest = root->edges[i]->dest;
+			if (dest)
+			{
+				predict_helper(next, dest, dest->st->_remain_len);
+			}
+		}
+	}
+	// sanity check
+	assert(cnt == 250);
+}
+
+
+// TODO: whether to force step intermediete state?
 void step_ref(State &s, const vector<CardGroup>::iterator &a) {
 	auto cg = *a;
-	s._players[s._current_idx]->remove_cards(a->_cards);
+	if (kicker_set.find(cg._category) != kicker_set.end() && s._remain_len == 0)
+	{
+		s._remain_len = cg._len;
+		if (cg._category == Category::THREE_ONE || cg._category == Category::THREE_ONE_LINE ||
+			cg._category == Category::FOUR_TAKE_ONE)
+		{
+			s._single = true;
+		}
+		else {
+			s._single = false;
+		}
+		s._cache_cg = cg;
+		for (int i = 0; i < cg._len * (s._single ? 1 : 2); i++)
+		{
+			s._cache_cg._cards.pop_back();
+		}
+		return;
+	}
+	else if (s._remain_len > 0) {
+
+		if (cg._category == Category::SINGLE) {
+			s._cache_cg._cards.push_back(cg._cards[0]);
+		}
+		else if (cg._category == Category::DOUBLE) {
+			s._cache_cg._cards.push_back(cg._cards[0]);
+			s._cache_cg._cards.push_back(cg._cards[1]);
+		}
+		else {
+			assert(false);
+		}
+		--s._remain_len;
+		if (s._remain_len == 0)
+		{
+			cg = s._cache_cg;
+		} else {
+			return;
+		}
+	}
+
+	s._players[s._current_idx]->remove_cards(cg._cards);
 
 	auto next_idx = (s._current_idx + 1) % 3;
 	if (cg._category != Category::EMPTY)
@@ -276,7 +407,42 @@ void step_ref(State &s, const vector<CardGroup>::iterator &a) {
 State* step(const State& s, const vector<CardGroup>::iterator &a) {
 	auto cg = *a;
 	State *sprime = new State(s);
-	sprime->_players[sprime->_current_idx]->remove_cards(a->_cards);
+	if (kicker_set.find(cg._category) != kicker_set.end() && sprime->_remain_len == 0)
+	{
+		sprime->_remain_len = cg._len;
+		if (cg._category == Category::THREE_ONE || cg._category == Category::THREE_ONE_LINE ||
+			cg._category == Category::FOUR_TAKE_ONE)
+		{
+			sprime->_single = true;
+		} else {
+			sprime->_single = false;
+		}
+		sprime->_cache_cg = cg;
+		for (int i = 0; i < cg._len * (sprime->_single ? 1 : 2); i++)
+		{
+			sprime->_cache_cg._cards.pop_back();
+		}
+		return sprime;
+	} else if (sprime->_remain_len > 0) {
+		
+		if (cg._category == Category::SINGLE) {
+			sprime->_cache_cg._cards.push_back(cg._cards[0]);
+		} else if (cg._category == Category::DOUBLE) {
+			sprime->_cache_cg._cards.push_back(cg._cards[0]);
+			sprime->_cache_cg._cards.push_back(cg._cards[1]);
+		} else {
+			assert(false);
+		}
+		--sprime->_remain_len;
+		if (sprime->_remain_len == 0)
+		{
+			cg = sprime->_cache_cg;
+		} else {
+			return sprime;
+		}
+	}
+	
+	sprime->_players[sprime->_current_idx]->remove_cards(cg._cards);
 
 	auto next_idx = (sprime->_current_idx + 1) % 3;
 	if (cg._category != Category::EMPTY)
