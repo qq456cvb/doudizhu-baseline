@@ -1,8 +1,8 @@
 #include "card.h"
 #include <iostream>
 #include <iterator>
+#include <algorithm>
 #include <assert.h>
-#include <windows.h>
 
 
 // Nuke can not be used as kicker, different from Python side, 

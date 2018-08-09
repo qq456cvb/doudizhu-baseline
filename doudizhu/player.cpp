@@ -222,9 +222,9 @@ CardGroup MCPlayer::respond(const CardGroup &last_card) {
 }
 
 ostream& operator <<(ostream& os, const Player& c) {
-	for (auto c : c._handcards)
+	for (auto card : c._handcards)
 	{
-		os << c << ", ";
+		os << card << ", ";
 	}
 	return os;
 }

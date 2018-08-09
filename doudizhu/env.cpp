@@ -1,5 +1,6 @@
 #include "env.h"
 #include <iostream>
+#include <algorithm>
 
 vector<Card> Env::_init_cards = {
 	Card::THREE,
