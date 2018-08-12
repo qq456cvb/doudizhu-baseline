@@ -6,12 +6,13 @@
 #include <iostream>
 using namespace std;
 
- #define DEBUG
+// #define DEBUG
 
 class Env {
 public:
 	static vector<Card> _init_cards;
 	vector<Card> _cards;
+	vector<Card> _extra_cards;
 	vector<Player*> _players;
 	int _current_idx, _current_controller;
 	CardGroup _last_group;

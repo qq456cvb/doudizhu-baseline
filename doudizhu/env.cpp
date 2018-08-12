@@ -61,6 +61,7 @@ vector<Card> Env::_init_cards = {
 
 void Env::reset() {
 	this->_cards = _init_cards;
+	this->_extra_cards.clear();
 	for (auto player : _players)
 	{
 		player->reset();
@@ -70,6 +71,9 @@ void Env::reset() {
 	for (int i = 0; i < 20; i++)
 	{
 		_players[0]->add_card(_cards[i]);
+	}
+	for (int i = 17; i < 20; i++) {
+		_extra_cards.push_back(_cards[i]);
 	}
 	for (int i = 20; i < 37; i++) {
 		_players[1]->add_card(_cards[i]);
