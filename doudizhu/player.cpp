@@ -20,7 +20,7 @@ insert_sorted(std::vector<T> & vec, T const& item, Pred pred)
 	);
 }
 
-Player::Player(Env *env)
+Player::Player(CEnv *env)
 {
 	this->reset();
 	this->_env = env;
@@ -205,28 +205,28 @@ CardGroup MCPlayer::respond(const CardGroup &last_card) {
 	int idx1 = (_env->_current_idx + 1) % 3, idx2 = (_env->_current_idx + 2) % 3;
 	vector<Card> unseen_cards = _env->_players[idx1]->_handcards;
 	unseen_cards.insert(unseen_cards.end(), _env->_players[idx2]->_handcards.begin(), _env->_players[idx2]->_handcards.end());
-	if (_env->_current_idx != 0) {
-		for (auto c : _env->_extra_cards) {
-			auto it = find(unseen_cards.begin(), unseen_cards.end(), c);
-			assert(it != unseen_cards.end());
-			unseen_cards.erase(it);
-		}
-	}
+	// if (_env->_current_idx != 0) {
+	// 	for (auto c : _env->_extra_cards) {
+	// 		auto it = find(unseen_cards.begin(), unseen_cards.end(), c);
+	// 		assert(it != unseen_cards.end());
+	// 		unseen_cards.erase(it);
+	// 	}
+	// }
 	vector<thread> threads;
 	for (size_t d = 0; d < max_d; d++)
 	{
 		State *ss = new State(*s);
 		shuffle(unseen_cards.begin(), unseen_cards.end(), _env->_generator);
 		ss->_players[idx1]->_handcards = vector<Card>(unseen_cards.begin(), unseen_cards.begin() + _env->_players[idx1]->_handcards.size());
-		if (idx1 == 0) {
-			ss->_players[idx1]->_handcards.insert(ss->_players[idx1]->_handcards.end(), _env->_extra_cards.begin(), _env->_extra_cards.end());
-		}
+		// if (idx1 == 0) {
+		// 	ss->_players[idx1]->_handcards.insert(ss->_players[idx1]->_handcards.end(), _env->_extra_cards.begin(), _env->_extra_cards.end());
+		// }
 		sort(ss->_players[idx1]->_handcards.begin(), ss->_players[idx1]->_handcards.end());
 		ss->_players[idx1]->calc_avail_actions();
 		ss->_players[idx2]->_handcards = vector<Card>(unseen_cards.begin() + _env->_players[idx1]->_handcards.size(), unseen_cards.end());
-		if (idx2 == 0) {
-			ss->_players[idx2]->_handcards.insert(ss->_players[idx2]->_handcards.end(), _env->_extra_cards.begin(), _env->_extra_cards.end());
-		}
+		// if (idx2 == 0) {
+		// 	ss->_players[idx2]->_handcards.insert(ss->_players[idx2]->_handcards.end(), _env->_extra_cards.begin(), _env->_extra_cards.end());
+		// }
 		sort(ss->_players[idx2]->_handcards.begin(), ss->_players[idx2]->_handcards.end());
 		ss->_players[idx2]->calc_avail_actions();
 

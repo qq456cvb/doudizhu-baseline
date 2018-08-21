@@ -28,7 +28,7 @@ public:
 	int _current_idx, _current_controller, _winner, _target_idx;
 
 	State(const State &s);
-	State(const Env &env);
+	State(const CEnv &env);
 	~State();
 
 	vector<vector<CardGroup>::iterator> get_action_space() const;

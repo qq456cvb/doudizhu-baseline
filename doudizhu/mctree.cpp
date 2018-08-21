@@ -20,7 +20,7 @@ State::State(const State &s) {
 	}
 }
 
-State::State(const Env &env) {
+State::State(const CEnv &env) {
 	_last_group = env._last_group;
 	_current_idx = env._current_idx;
 	_current_controller = env._current_controller;

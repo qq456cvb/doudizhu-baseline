@@ -5,11 +5,11 @@
 #include <mutex>
 using namespace std;
 
-class Env;
+class CEnv;
 class Player
 {
 public:
-	Player(Env *env);
+	Player(CEnv *env);
 	Player(const Player &);
 	~Player();
 
@@ -33,14 +33,14 @@ private:
 	
 protected:
 	
-	Env *_env;
+	CEnv *_env;
 	
 };
 
 class RandomPlayer : public Player
 {
 public:
-	RandomPlayer(Env *env) : Player(env) {};
+	RandomPlayer(CEnv *env) : Player(env) {};
 	CardGroup respond(const CardGroup &last_card) override;
 };
 
@@ -50,7 +50,7 @@ class State;
 class MCPlayer : public Player
 {
 public:
-	MCPlayer(Env *env) : Player(env) {};
+	MCPlayer(CEnv *env) : Player(env) {};
 	CardGroup respond(const CardGroup &last_card) override;
 	void multisearch(vector<int> &cnts, State *root);
 

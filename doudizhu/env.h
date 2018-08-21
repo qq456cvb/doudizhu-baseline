@@ -8,7 +8,7 @@ using namespace std;
 
 // #define DEBUG
 
-class Env {
+class CEnv {
 public:
 	static vector<Card> _init_cards;
 	vector<Card> _cards;
@@ -20,9 +20,14 @@ public:
 
 
 	void reset();
-	bool step(int &winner);
+	tuple<int, bool, CardGroup> step_auto();
+	tuple<int, bool, CardGroup> step_manual(CardGroup cg);
+	vector<int> get_current_handcards();
+	vector<int> get_last_outcards();
+	int get_role_ID();
+	vector<float> get_state_prob();
 
-	Env() : _last_group({}, Category::EMPTY, 0) {
+	CEnv() : _last_group({}, Category::EMPTY, 0) {
 		auto seed = random_device{}();
 		cout << "seeding " << seed << endl;
 		this->_generator = mt19937(seed);
@@ -36,7 +41,7 @@ public:
 		}
 	}
 
-	~Env() {
+	~CEnv() {
 		for (auto player : _players)
 		{
 			delete player;

@@ -1,8 +1,9 @@
 #include "env.h"
 #include <iostream>
 #include <algorithm>
+#include <assert.h>
 
-vector<Card> Env::_init_cards = {
+vector<Card> CEnv::_init_cards = {
 	Card::THREE,
 	Card::THREE,
 	Card::THREE,
@@ -59,7 +60,7 @@ vector<Card> Env::_init_cards = {
 	Card::RED_JOKER
 };
 
-void Env::reset() {
+void CEnv::reset() {
 	this->_cards = _init_cards;
 	this->_extra_cards.clear();
 	for (auto player : _players)
@@ -99,7 +100,7 @@ void Env::reset() {
 	_last_group = CardGroup({}, Category::EMPTY, 0);
 }
 
-bool Env::step(int &winner) {
+tuple<int, bool, CardGroup> CEnv::step_auto() {
 	CardGroup respondence = _players[_current_idx]->respond(_last_group);
 	auto next_idx = (_current_idx + 1) % 3;
 
@@ -112,8 +113,7 @@ bool Env::step(int &winner) {
 		_last_group = respondence;
 		if (_players[_current_idx]->over())
 		{
-			winner = _current_idx;
-			return true;
+			return make_tuple(_current_idx, true, respondence);
 		}
 		
 	} else {
@@ -127,5 +127,93 @@ bool Env::step(int &winner) {
 	}
 	_current_idx = next_idx;
 	//cout << "stepped" << endl;
-	return false;
+	return make_tuple(_current_idx, false, respondence);
 }
+
+tuple<int, bool, CardGroup> CEnv::step_manual(CardGroup cg) {
+	_players[_current_idx]->remove_cards(cg._cards);
+	auto next_idx = (_current_idx + 1) % 3;
+
+	if (cg._category != Category::EMPTY)
+	{
+#ifdef DEBUG
+		cout << "player: " << _current_idx << " gives " << respondence << endl;
+#endif
+		_current_controller = _current_idx;
+		_last_group = cg;
+		if (_players[_current_idx]->over())
+		{
+			return make_tuple(_current_idx, true, cg);
+		}
+		
+	} else {
+#ifdef DEBUG
+		cout << "player: " << _current_idx << " pass" << endl;
+#endif
+	}
+	if (next_idx == _current_controller)
+	{
+		_last_group = CardGroup({}, Category::EMPTY, 0);
+	}
+	_current_idx = next_idx;
+	//cout << "stepped" << endl;
+	return make_tuple(_current_idx, false, cg);
+}
+
+vector<int> to_value(const vector<Card> &cards) {
+	vector<int> results(cards.size(), 0);
+	for (size_t i = 0; i < cards.size(); i++) {
+		results[i] = static_cast<int>(cards[i]);
+	}
+	return results;
+}
+
+vector<int> CEnv::get_current_handcards() {
+	return to_value(_players[_current_idx]->_handcards);
+}
+
+vector<int> CEnv::get_last_outcards() {
+	return to_value(_last_group._cards);
+}
+
+int CEnv::get_role_ID() {
+	switch (_current_idx) {
+		case 0:
+			return 2;
+		case 1:
+			return 3;
+		case 2:
+			return 1;
+		default:
+			return -1;
+	}
+}
+
+std::vector<int> toOneHot60(const std::vector<Card> &v) {
+	std::vector<int> result(60, 0);
+	for (auto c : v) {
+		int unordered_color = static_cast<int>(c) * 4;
+		while (result[unordered_color++] > 0);
+		result[unordered_color - 1]++;
+	}
+	return result;
+    }
+
+vector<float> CEnv::get_state_prob() {
+	assert(_current_idx == 0 && "get state prob must be called for lord");
+	vector<Card> tmp = _players[1]->_handcards;
+	tmp.insert(tmp.end(), _players[2]->_handcards.begin(), _players[2]->_handcards.end());
+	vector<int> remains = toOneHot60(tmp);
+	vector<float> prob1(remains.begin(), remains.end());
+    vector<float> prob2(remains.begin(), remains.end());
+
+	auto size1 = _players[1]->_handcards.size();
+	auto size2 = _players[2]->_handcards.size();
+	for (int i = 0; i < remains.size(); i++) {
+		prob1[i] *= float(size1) / (size1 + size2);
+		prob2[i] *= float(size2) / (size1 + size2);
+	}
+	prob1.insert(prob1.end(), prob2.begin(), prob2.end());
+	return prob1;
+}
+
