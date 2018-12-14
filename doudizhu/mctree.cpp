@@ -160,7 +160,7 @@ void MCTree::search_thread(mt19937 *generator) {
 }
 
 
-// TODO: change node lock to per 
+// TODO: change per node lock to per edge
 Node* MCTree::explore(Node* node, float& val, mt19937 &generator) {
 	std::unique_lock<std::mutex> lock(node->mu);
 	auto edge = node->choose(this->c);

@@ -230,23 +230,24 @@ CardGroup MCPlayer::respond(const CardGroup &last_card) {
 		sort(ss->_players[idx2]->_handcards.begin(), ss->_players[idx2]->_handcards.end());
 		ss->_players[idx2]->calc_avail_actions();
 
-		threads.push_back(std::move(std::thread(&MCPlayer::multisearch, this, std::ref(total_cnts), ss)));
+		// parallel determinization (parallel MCT)
+		/*threads.push_back(std::move(std::thread(&MCPlayer::multisearch, this, std::ref(total_cnts), ss)));
 		if ((d + 1) % 2 == 0 || d == max_d - 1)
 		{
 			for (auto& t : threads) {
 				t.join();
 			}
 			threads.clear();
-		}
+		}*/
 		
-		
-		/*MCTree tree(ss, sqrtf(2.f));
+		// sequential determinization (parallel MCT)
+		MCTree tree(ss, sqrtf(2.f));
 		tree.search(n_threads, max_iter);
 		vector<int> cnts = tree.predict();
 		for (size_t i = 0; i < action_space.size(); i++)
 		{
 			total_cnts[i] += cnts[i];
-		}*/
+		}
 	}
 
 	

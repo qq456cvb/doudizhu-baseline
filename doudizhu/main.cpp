@@ -1,4 +1,5 @@
 #include "env.h"
+#include <cstdio>
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
@@ -20,7 +21,7 @@ void printProgress(double percentage)
 
 int main(int argc, char *argv[]) {
 	//cout << all_actions.size() << endl;
-	Env env;
+	CEnv env;
 	int cnt[3] = { 0, 0 };
 	fstream fs;
 	fs.open("cards.bin", fstream::out | fstream::trunc);
@@ -42,7 +43,8 @@ int main(int argc, char *argv[]) {
 		bool done = false;
 		int winner = 0;
 		while (!done) {
-			done = env.step(winner);
+			auto res = env.step_auto();
+			done = get<1>(res);
 		}
 		cnt[winner]++;
 		printProgress((i + 1) / double(total));
