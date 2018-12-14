@@ -20,6 +20,11 @@ insert_sorted(std::vector<T> & vec, T const& item, Pred pred)
 	);
 }
 
+Player::Player()
+{
+    this->reset();
+}
+
 Player::Player(CEnv *env)
 {
 	this->reset();

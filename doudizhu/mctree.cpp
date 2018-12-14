@@ -6,6 +6,11 @@
 
 
 vector<mt19937> generators;
+extern int n_threads, max_d, max_iter;
+
+State::State() {
+
+}
 
 State::State(const State &s) {
 	_last_group = s._last_group;
@@ -307,4 +312,71 @@ State* step(const State& s, const vector<CardGroup>::iterator &a) {
 	sprime->_current_idx = next_idx;
 	//cout << "stepped" << endl;
 	return sprime;
+}
+
+
+CardGroup mcsearch(vector<Card> self_cards, vector<Card> unseen_cards,
+    int next_handcards_cnt,
+    const CardGroup &last_cardgroup, int current_idx, int current_controller) {
+    auto seed = random_device{}();
+    auto generator = mt19937(seed);
+
+    // set attributes
+    State *s = new State();
+    s->_current_idx = current_idx;
+    s->_current_controller = current_controller;
+    s->_winner = -1;
+    s->_id = StateId::NORMAL;
+    s->_target_idx = current_idx;
+    s->_last_group = last_cardgroup;
+    s->_players[current_idx] = new Player();
+    s->_players[current_idx]->_handcards = self_cards;
+    s->_players[current_idx]->calc_avail_actions();
+
+    auto action_space = s->get_action_space();
+    vector<int> total_cnts(action_space.size(), 0);
+
+    int idx1 = (s->_current_idx + 1) % 3, idx2 = (s->_current_idx + 2) % 3;
+
+    vector<thread> threads;
+    for (size_t d = 0; d < max_d; d++)
+    {
+        State *ss = new State(*s);
+        shuffle(unseen_cards.begin(), unseen_cards.end(), generator);
+        ss->_players[idx1]->_handcards = vector<Card>(unseen_cards.begin(), unseen_cards.begin() + next_handcards_cnt);
+        // if (idx1 == 0) {
+        // 	ss->_players[idx1]->_handcards.insert(ss->_players[idx1]->_handcards.end(), _env->_extra_cards.begin(), _env->_extra_cards.end());
+        // }
+        sort(ss->_players[idx1]->_handcards.begin(), ss->_players[idx1]->_handcards.end());
+        ss->_players[idx1]->calc_avail_actions();
+        ss->_players[idx2]->_handcards = vector<Card>(unseen_cards.begin() + next_handcards_cnt, unseen_cards.end());
+        // if (idx2 == 0) {
+        // 	ss->_players[idx2]->_handcards.insert(ss->_players[idx2]->_handcards.end(), _env->_extra_cards.begin(), _env->_extra_cards.end());
+        // }
+        sort(ss->_players[idx2]->_handcards.begin(), ss->_players[idx2]->_handcards.end());
+        ss->_players[idx2]->calc_avail_actions();
+
+        // parallel determinization (parallel MCT)
+        /*threads.push_back(std::move(std::thread(&MCPlayer::multisearch, this, std::ref(total_cnts), ss)));
+        if ((d + 1) % 2 == 0 || d == max_d - 1)
+        {
+            for (auto& t : threads) {
+                t.join();
+            }
+            threads.clear();
+        }*/
+
+        // sequential determinization (parallel MCT)
+        MCTree tree(ss, sqrtf(2.f));
+        tree.search(n_threads, max_iter);
+        vector<int> cnts = tree.predict();
+        for (size_t i = 0; i < action_space.size(); i++)
+        {
+            total_cnts[i] += cnts[i];
+        }
+    }
+
+    auto cand = *action_space[max_element(total_cnts.begin(), total_cnts.end()) - total_cnts.begin()];
+    delete s;
+    return cand;
 }

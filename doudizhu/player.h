@@ -9,6 +9,7 @@ class CEnv;
 class Player
 {
 public:
+    Player();
 	Player(CEnv *env);
 	Player(const Player &);
 	~Player();

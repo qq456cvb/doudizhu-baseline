@@ -27,6 +27,7 @@ public:
 	vector<Player*> _players;
 	int _current_idx, _current_controller, _winner, _target_idx;
 
+    State();
 	State(const State &s);
 	State(const CEnv &env);
 	~State();
@@ -86,11 +87,14 @@ public:
 
 	void search(int n_threads, int n);
 	void search_thread(mt19937 *generator);
-	Node *explore(Node *node, float&val, mt19937 &generator);
+	Node *explore(Node *node, float &val, mt19937 &generator);
 	void backup(Node *node, float val);
 	float rollout(Node *node, mt19937 &generator);
 	vector<int> predict();
 };
 
+CardGroup mcsearch(vector<Card> self_cards, vector<Card> unseen_cards,
+    int next_handcards_cnt,
+    const CardGroup &last_cardgroup, int current_idx, int current_controller);
 void step_ref(State &s, const vector<CardGroup>::iterator &a);
 State* step(const State& s, const vector<CardGroup>::iterator &a);
