@@ -95,6 +95,7 @@ public:
 
 CardGroup mcsearch(vector<Card> self_cards, vector<Card> unseen_cards,
     int next_handcards_cnt,
-    const CardGroup &last_cardgroup, int current_idx, int current_controller);
+    const CardGroup &last_cardgroup, int current_idx, int current_controller,
+    int n_threads, int max_d, int max_iter);
 void step_ref(State &s, const vector<CardGroup>::iterator &a);
 State* step(const State& s, const vector<CardGroup>::iterator &a);

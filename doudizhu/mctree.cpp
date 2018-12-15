@@ -6,7 +6,6 @@
 
 
 vector<mt19937> generators;
-extern int n_threads, max_d, max_iter;
 
 State::State() {
 
@@ -317,7 +316,8 @@ State* step(const State& s, const vector<CardGroup>::iterator &a) {
 
 CardGroup mcsearch(vector<Card> self_cards, vector<Card> unseen_cards,
     int next_handcards_cnt,
-    const CardGroup &last_cardgroup, int current_idx, int current_controller) {
+    const CardGroup &last_cardgroup, int current_idx, int current_controller,
+    int n_threads, int max_d, int max_iter) {
     auto seed = random_device{}();
     auto generator = mt19937(seed);
 
@@ -329,8 +329,12 @@ CardGroup mcsearch(vector<Card> self_cards, vector<Card> unseen_cards,
     s->_id = StateId::NORMAL;
     s->_target_idx = current_idx;
     s->_last_group = last_cardgroup;
-    s->_players[current_idx] = new Player();
+    for (size_t i = 0; i < 3; i++)
+    {
+        s->_players.push_back(new Player());
+    }
     s->_players[current_idx]->_handcards = self_cards;
+    sort(s->_players[current_idx]->_handcards.begin(), s->_players[current_idx]->_handcards.end());
     s->_players[current_idx]->calc_avail_actions();
 
     auto action_space = s->get_action_space();
@@ -343,12 +347,14 @@ CardGroup mcsearch(vector<Card> self_cards, vector<Card> unseen_cards,
     {
         State *ss = new State(*s);
         shuffle(unseen_cards.begin(), unseen_cards.end(), generator);
+
         ss->_players[idx1]->_handcards = vector<Card>(unseen_cards.begin(), unseen_cards.begin() + next_handcards_cnt);
         // if (idx1 == 0) {
         // 	ss->_players[idx1]->_handcards.insert(ss->_players[idx1]->_handcards.end(), _env->_extra_cards.begin(), _env->_extra_cards.end());
         // }
         sort(ss->_players[idx1]->_handcards.begin(), ss->_players[idx1]->_handcards.end());
         ss->_players[idx1]->calc_avail_actions();
+
         ss->_players[idx2]->_handcards = vector<Card>(unseen_cards.begin() + next_handcards_cnt, unseen_cards.end());
         // if (idx2 == 0) {
         // 	ss->_players[idx2]->_handcards.insert(ss->_players[idx2]->_handcards.end(), _env->_extra_cards.begin(), _env->_extra_cards.end());
