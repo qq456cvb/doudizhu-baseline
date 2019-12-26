@@ -2,6 +2,7 @@
 #include <math.h>
 #include <assert.h>
 #include <unordered_set>
+#include <algorithm>
 #include "env.h"
 
 
